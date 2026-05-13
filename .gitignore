@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PDF files
+backend/input/*
+backend/processed/*
+backend/pdf/*
+
+# Keep folders
+!backend/input/.gitkeep
+!backend/processed/.gitkeep
+!backend/pdf/.gitkeep
+
+# Docker
+mysql_data/
+
+# Logs
+*.log
