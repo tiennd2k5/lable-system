@@ -1,9 +1,11 @@
 name: logistics-oracle
-
 services:
+
   oracle-db:
     image: gvenzl/oracle-free:23
+
     container_name: logistics-oracle
+
     restart: always
 
     environment:

@@ -1,0 +1,10 @@
+CREATE USER logistics_app IDENTIFIED BY oracle;
+
+GRANT CREATE SESSION TO logistics_app;
+
+GRANT CREATE TABLE TO logistics_app;
+GRANT CREATE SEQUENCE TO logistics_app;
+GRANT CREATE VIEW TO logistics_app;
+GRANT CREATE PROCEDURE TO logistics_app;
+
+ALTER USER logistics_app QUOTA UNLIMITED ON USERS;

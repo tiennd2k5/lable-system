@@ -14,18 +14,10 @@ venv/
 .DS_Store
 Thumbs.db
 
-# PDF files
-backend/input/*
-backend/processed/*
-backend/pdf/*
-
-# Keep folders
-!backend/input/.gitkeep
-!backend/processed/.gitkeep
-!backend/pdf/.gitkeep
 
 # Docker
 mysql_data/
+oracle-data/
 
 # Logs
 *.log

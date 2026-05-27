@@ -5,13 +5,76 @@ import shutil
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-from parser import read_pdf_data, parse_label, send_to_api
+from parser import (
+    read_pdf_data,
+    parse_label,
+    send_to_api
+)
+
+# ================= CONFIG =================
 
 INPUT_FOLDER = "input"
 PROCESSED_FOLDER = "processed"
+FAILED_FOLDER = "failed"
+
+# ================= HANDLER =================
 
 class PDFHandler(FileSystemEventHandler):
 
+    def process_pdf(self, pdf_path):
+
+        try:
+
+            print(f"\n[INFO] New PDF detected: {pdf_path}")
+
+            # wait until file copy finishes
+            time.sleep(2)
+
+            # read PDF
+            items, raw_text = read_pdf_data(pdf_path)
+
+            # parse data
+            parsed_data = parse_label(
+                items,
+                raw_text
+            )
+
+            print("\n====== EXTRACTED DATA ======")
+
+            for k, v in parsed_data.items():
+                print(f"{k:20}: {v}")
+
+            # send to API
+            response = send_to_api(parsed_data)
+
+            if response and response.status_code == 200:
+
+                move_file(
+                    pdf_path,
+                    PROCESSED_FOLDER
+                )
+
+                print("\n[SUCCESS] PDF processed successfully.")
+
+            else:
+
+                move_file(
+                    pdf_path,
+                    FAILED_FOLDER
+                )
+
+                print("\n[ERROR] API request failed.")
+
+        except Exception as e:
+
+            print(f"\n[ERROR] {e}")
+
+            move_file(
+                pdf_path,
+                FAILED_FOLDER
+            )
+
+    # triggered when new file appears
     def on_created(self, event):
 
         if event.is_directory:
@@ -20,50 +83,51 @@ class PDFHandler(FileSystemEventHandler):
         if not event.src_path.lower().endswith(".pdf"):
             return
 
-        try:
-            print(f"\n[INFO] Phát hiện PDF mới: {event.src_path}")
+        self.process_pdf(event.src_path)
 
-            # đợi file copy xong
-            time.sleep(2)
+# ================= UTILITIES =================
 
-            items, raw_text = read_pdf_data(event.src_path)
+def move_file(src_path, destination_folder):
 
-            parsed_data = parse_label(items, raw_text)
+    filename = os.path.basename(src_path)
 
-            print("\n====== KẾT QUẢ ======")
+    dest_path = os.path.join(
+        destination_folder,
+        filename
+    )
 
-            for k, v in parsed_data.items():
-                print(f"{k:20}: {v}")
+    shutil.move(src_path, dest_path)
 
-            send_to_api(parsed_data)
+    print(f"[INFO] Moved file to: {dest_path}")
 
-            # move file
-            filename = os.path.basename(event.src_path)
+# ================= START WATCHER =================
 
-            dest_path = os.path.join(
-                PROCESSED_FOLDER,
+def process_existing_files(handler):
+
+    for filename in os.listdir(INPUT_FOLDER):
+
+        if filename.lower().endswith(".pdf"):
+
+            full_path = os.path.join(
+                INPUT_FOLDER,
                 filename
             )
 
-            shutil.move(event.src_path, dest_path)
+            handler.process_pdf(full_path)
 
-            print(f"\n[INFO] Đã chuyển sang processed/{filename}")
-
-        except Exception as e:
-            print("\n[LỖI]", e)
+# ================= MAIN =================
 
 if __name__ == "__main__":
 
+    # create folders
     os.makedirs(INPUT_FOLDER, exist_ok=True)
     os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+    os.makedirs(FAILED_FOLDER, exist_ok=True)
 
     event_handler = PDFHandler()
 
-    for filename in os.listdir(INPUT_FOLDER):
-        if filename.lower().endswith(".pdf"):
-            event_handler.on_created(
-                type('Event', (object,), {'src_path': os.path.join(INPUT_FOLDER, filename), 'is_directory': False})
-            )
+    # process old files first
+    process_existing_files(event_handler)
 
     observer = Observer()
 
@@ -75,13 +139,17 @@ if __name__ == "__main__":
 
     observer.start()
 
-    print(f"[WATCHER] Đang theo dõi folder: {INPUT_FOLDER}")
+    print(f"\n[WATCHER] Monitoring folder: {INPUT_FOLDER}")
 
     try:
+
         while True:
             time.sleep(1)
 
     except KeyboardInterrupt:
+
+        print("\n[WATCHER] Stopping watcher...")
+
         observer.stop()
 
     observer.join()

@@ -1,29 +1,37 @@
-import mysql.connector
+import oracledb
 
-def clear_database():
+from database import get_db_connection
+
+# ================= RESET DATABASE =================
+
+def reset_database():
+
     try:
-        db = mysql.connector.connect(
-            host="localhost",
-            port=3307,
-            user="root",
-            password="Mst_0314120650",
-            database="LogisticsDB"
-        )
+
+        db = get_db_connection()
+
         cursor = db.cursor()
-        
-        # Lệnh xóa sạch bảng
-        sql = "TRUNCATE TABLE ShipmentLabels"
-        cursor.execute(sql)
-        
+
+        print("[INFO] Clearing ShipmentLabels table...")
+
+        # delete all rows
+        cursor.execute("""
+            DELETE FROM ShipmentLabels
+        """)
+
         db.commit()
-        print("[DATABASE] Đã xóa toàn bộ dữ liệu mẫu thành công!")
-        
+
+        print("[SUCCESS] Table data deleted.")
+
         cursor.close()
         db.close()
+
     except Exception as e:
-        print(f"Lỗi: {e}")
+
+        print("[ERROR]", e)
+
+# ================= MAIN =================
 
 if __name__ == "__main__":
-    confirm = input("Bạn có chắc chắn muốn xóa sạch DB? (y/n): ")
-    if confirm.lower() == 'y':
-        clear_database()
+
+    reset_database()

@@ -1,18 +1,7 @@
 import os
 import re
-import mysql.connector
 import pdfplumber
 import requests
-
-# ================== DATABASE ==================
-def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        port=3307,
-        user="root",
-        password="Mst_0314120650",
-        database="LogisticsDB"
-    )
 
 # ================== API CLIENT ==================
 def send_to_api(data):
@@ -175,31 +164,19 @@ def parse_label(structured_items, raw_text):
 
     return data
 
-# ================== SAVE DATABASE ==================
-def save_to_db(data):
-    try:
-        db = get_db_connection()
-        cursor = db.cursor()
-        cols = ", ".join(data.keys())
-        placeholders = ", ".join(["%s"] * len(data))
-        sql = f"INSERT IGNORE INTO ShipmentLabels ({cols}) VALUES ({placeholders})"
-        cursor.execute(sql, tuple(data.values()))
-        db.commit()
-        cursor.close()
-        db.close()
-        print("\n[Hệ thống] Đã lưu vào MySQL.")
-    except Exception as e:
-        print(f"Lỗi database: {e}")
-
 # ================== MAIN ==================
+
 pdf_path = r"./pdf/20260203152424.pdf"
 
 if __name__ == "__main__":
+
     if not os.path.exists(pdf_path):
-        print(f"Không tìm thấy file: {pdf_path}")
+
+        print(f"File not found: {pdf_path}")
+
     else:
+
         items, raw_text = read_pdf_data(pdf_path)
-        
         # # IN DEBUG TỌA ĐỘ (Để bạn soi lỗi C/N)
         # print(f"{'TEXT':<20} | {'X':<8} | {'Y':<8}")
         # print("-" * 40)
@@ -207,13 +184,16 @@ if __name__ == "__main__":
         #     # Tập trung in vùng có khả năng chứa C/N (y thấp)
         #     if item['y'] < 250:
         #         print(f"{item['text']:<20} | {item['x_min']:<8.1f} | {item['y']:<8.1f}")
-        
-        parsed_data = parse_label(items, raw_text)
 
-        print("\n====== KẾT QUẢ TRÍCH XUẤT ======")
+        parsed_data = parse_label(
+            items,
+            raw_text
+        )
+
+        print("\n====== EXTRACTED DATA ======")
+
         for k, v in parsed_data.items():
             print(f"{k:20}: {v}")
 
-        # save_to_db(parsed_data)
         send_to_api(parsed_data)
 
